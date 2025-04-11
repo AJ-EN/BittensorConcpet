@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding Bittensor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8fafc; /* Tailwind gray-50 */
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem; /* rounded-xl */
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1); /* shadow-md */
+            padding: 1.5rem; /* p-6 */
+            margin-bottom: 1.5rem; /* mb-6 */
+            transition: transform 0.2s ease-in-out;
+        }
+        .card:hover {
+            transform: translateY(-3px);
+        }
+        .peer-node {
+            border: 2px solid #e5e7eb; /* border-gray-200 */
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 0.5rem;
+            background-color: #f3f4f6; /* gray-100 */
+            transition: all 0.3s ease;
+            cursor: pointer;
+            position: relative;
+        }
+        .peer-node.selected {
+             border-color: #3b82f6; /* blue-500 */
+             background-color: #dbeafe; /* blue-100 */
+        }
+        .peer-node .stake-bar {
+            position: absolute;
+            bottom: 5px;
+            left: 10%;
+            width: 80%;
+            height: 5px;
+            background-color: #9ca3af; /* gray-400 */
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .peer-node .stake-fill {
+            height: 100%;
+            background-color: #2563eb; /* blue-600 */
+            transition: width 0.5s ease;
+        }
+        .vote-line {
+            stroke: #6b7280; /* gray-500 */
+            stroke-width: 1.5;
+            opacity: 0.6;
+            transition: opacity 0.3s ease;
+        }
+        .vote-line.active {
+            stroke: #ef4444; /* red-500 */
+            stroke-width: 2;
+            opacity: 1;
+        }
+        .info-box {
+            background-color: #eef2ff; /* indigo-50 */
+            border-left: 4px solid #4f46e5; /* indigo-600 */
+            padding: 1rem;
+            border-radius: 0.375rem; /* rounded-md */
+            margin-top: 1rem;
+            font-size: 0.875rem; /* text-sm */
+            color: #374151; /* gray-700 */
+        }
+        .tab-button {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            transition: background-color 0.2s ease, color 0.2s ease;
+            border: 1px solid transparent;
+        }
+        .tab-button.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: white;
+        }
+        .tab-button:not(.active) {
+            background-color: #e0e7ff; /* indigo-200 */
+            color: #3730a3; /* indigo-800 */
+            border: 1px solid #c7d2fe; /* indigo-300 */
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        /* Simple animation for stake changes */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        .stake-change {
+            animation: pulse 1s ease-in-out;
+        }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-3xl md:text-4xl font-bold text-center mb-8 text-gray-800">Understanding Bittensor</h1>
+
+        <div class="mb-6 flex justify-center space-x-2">
+            <button class="tab-button active" onclick="showTab('explanation')">Explanation</button>
+            <button class="tab-button" onclick="showTab('simulation')">Simulation</button>
+        </div>
+
+        <div id="explanation-content" class="tab-content active">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-3 text-indigo-700">What is Bittensor?</h2>
+                    <p class="text-gray-600">Imagine a global network where Artificial Intelligence (AI) models work together, learn from each other, and get rewarded for being genuinely useful. That's Bittensor!</p>
+                    <p class="text-gray-600 mt-2">It's a <strong class="text-indigo-600">peer-to-peer intelligence market</strong>. Instead of one big company controlling AI, thousands of independent computers (peers) contribute their intelligence.</p>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-3 text-indigo-700">How Does it Work?</h2>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li><strong>Peers Collaborate:</strong> AI models (peers) on the network share information and process data together.</li>
+                        <li><strong>Peer Ranking:</strong> Peers constantly evaluate each other. They learn to assign 'weights' (like votes) to peers that provide valuable information.</li>
+                        <li><strong>Digital Ledger (Blockchain):</strong> These weights and scores are recorded securely and transparently.</li>
+                        <li><strong>Incentives (Stake):</strong> Peers with high ranks (meaning they are trusted and valuable) earn rewards in the form of 'stake' (digital tokens), giving them more influence in the network.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-3 text-indigo-700">Why is it Important?</h2>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li><strong>Decentralization:</strong> Breaks away from AI controlled by a few large corporations.</li>
+                        <li><strong>Rewards Value:</strong> Incentivizes the creation of genuinely useful and diverse AI, not just models good at specific benchmarks.</li>
+                        <li><strong>Open Market:</strong> Creates a marketplace where anyone can contribute AI and potentially earn rewards.</li>
+                        <li><strong>Continuous Learning:</strong> The network constantly evolves as peers learn and improve.</li>
+                    </ul>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-2xl font-semibold mb-3 text-indigo-700">Key Concepts</h2>
+                    <ul class="list-disc list-inside text-gray-600 space-y-1">
+                        <li><strong>Peer:</strong> An individual computer/AI model participating in the network.</li>
+                        <li><strong>Stake (S):</strong> Represents ownership or influence in the network. Rewarded to valuable peers.</li>
+                        <li><strong>Weights (W):</strong> How peers rank each other's usefulness. A peer sets weights for others.</li>
+                        <li><strong>Trust (T):</strong> Derived from weights; how much a peer is trusted by the network (especially by those with high stake).</li>
+                        <li><strong>Incentive (I):</strong> The reward distributed to peers, calculated based on rank and trust.</li>
+                        <li><strong>Consensus:</strong> The mechanism ensuring that rewards primarily go to peers trusted by the majority, preventing manipulation (collusion).</li>
+                    </ul>
+                </div>
+            </div>
+             <div class="info-box mt-6">
+                <strong>Analogy:</strong> Think of it like a giant, digital brain where different parts (peers) specialize in different things. The brain learns to rely more (give more stake/influence) on the parts that consistently provide the best information, making the whole brain smarter over time. The system is designed so that parts trying to "cheat" by only praising themselves or their friends don't get rewarded much unless the rest of the brain agrees they are actually useful.
+            </div>
+        </div>
+
+        <div id="simulation-content" class="tab-content">
+            <div class="card">
+                <h2 class="text-2xl font-semibold mb-4 text-center text-indigo-700">Bittensor Simulation</h2>
+                <p class="text-center text-gray-600 mb-4">Observe how stake (influence) shifts based on peer voting and the incentive mechanism.</p>
+
+                <div class="flex justify-center items-center mb-6">
+                    <button id="run-step-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition mr-4">Run One Step</button>
+                    <button id="run-auto-btn" class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition mr-4">Auto-Run (5s)</button>
+                    <button id="stop-auto-btn" class="bg-red-500 hover:bg-red-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition mr-4 hidden">Stop Auto</button>
+                     <button id="reset-btn" class="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-4 rounded-lg shadow transition">Reset</button>
+                </div>
+
+                <div class="text-center mb-4">
+                    <span class="font-semibold">Round: <span id="round-counter">0</span></span> |
+                    <span class="font-semibold">Total Stake: <span id="total-stake">1.00</span></span>
+                </div>
+
+                <div id="peer-visualization" class="relative flex flex-wrap justify-center items-center p-4 min-h-[300px] bg-gray-50 rounded-lg border border-gray-200">
+                    <svg id="vote-lines-svg" class="absolute top-0 left-0 w-full h-full pointer-events-none">
+                        </svg>
+                </div>
+
+                <div class="mt-6">
+                    <h3 class="text-lg font-semibold mb-2 text-gray-700">Log</h3>
+                    <div id="log-area" class="h-32 overflow-y-auto bg-gray-100 p-3 rounded-md border border-gray-200 text-sm text-gray-600">
+                        Simulation ready. Click 'Run One Step' or 'Auto-Run'.
+                    </div>
+                </div>
+            </div>
+            <div class="info-box mt-6">
+                <strong>Simulation Notes:</strong> This is a highly simplified model.
+                <ul>
+                    <li>Peers vote randomly initially, but honest peers slightly favor those with higher stake/trust over time.</li>
+                    <li>'Cabal' peers (if any) only vote for each other.</li>
+                    <li>'Trust' is simplified: Peers gain trust if voted for by >50% of stake (approximated).</li>
+                    <li>'Incentive' = Rank * Trust (simplified). New stake is distributed based on incentive.</li>
+                    <li>Observe how stake tends to concentrate on 'trusted' peers and how the cabal struggles unless it's very large.</li>
+                 </ul>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Tab Switching Logic ---
+        function showTab(tabId) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            // Deactivate all tab buttons
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+
+            // Show the selected tab content
+            document.getElementById(tabId + '-content').classList.add('active');
+            // Activate the selected tab button
+            document.querySelector(`.tab-button[onclick="showTab('${tabId}')"]`).classList.add('active');
+        }
+
+        // --- Simulation Logic ---
+        const peerVis = document.getElementById('peer-visualization');
+        const logArea = document.getElementById('log-area');
+        const roundCounterEl = document.getElementById('round-counter');
+        const totalStakeEl = document.getElementById('total-stake');
+        const runStepBtn = document.getElementById('run-step-btn');
+        const runAutoBtn = document.getElementById('run-auto-btn');
+        const stopAutoBtn = document.getElementById('stop-auto-btn');
+        const resetBtn = document.getElementById('reset-btn');
+        const svgLines = document.getElementById('vote-lines-svg');
+
+        let peers = [];
+        let round = 0;
+        let totalStake = 1.0;
+        const inflationRate = 0.05; // New stake added each round (% of total)
+        const numPeers = 8;
+        const numCabal = 2; // Number of peers in the colluding cabal
+        let autoRunInterval = null;
+        const consensusThreshold = 0.5; // Stake needed to be considered 'trusted'
+        const temp = 10; // Steepness for sigmoid trust calculation
+
+        // Peer object structure
+        class Peer {
+            constructor(id, isCabal = false) {
+                this.id = id;
+                this.el = null; // DOM element
+                this.stake = totalStake / numPeers;
+                this.weights = new Array(numPeers).fill(0); // How this peer votes
+                this.rank = 0; // Calculated based on incoming votes
+                this.trust = 0; // Calculated based on consensus
+                this.incentive = 0; // Rank * Trust
+                this.isCabal = isCabal;
+                this.stakeHistory = [this.stake];
+            }
+
+            // Simple voting logic
+            calculateWeights() {
+                this.weights = new Array(numPeers).fill(0);
+                let totalWeight = 0;
+
+                if (this.isCabal) {
+                    // Cabal members only vote for other cabal members (or themselves)
+                    const cabalIndices = peers.map((p, i) => p.isCabal ? i : -1).filter(i => i !== -1);
+                    if (cabalIndices.length > 0) {
+                         const targetIndex = cabalIndices[Math.floor(Math.random() * cabalIndices.length)];
+                         this.weights[targetIndex] = 1.0; // Give all weight to one random cabal member
+                         totalWeight = 1.0;
+                    } else { // Should not happen if numCabal > 0
+                        this.weights[this.id] = 1.0; // Vote self if only one cabal member
+                        totalWeight = 1.0;
+                    }
+
+                } else {
+                    // Honest peers vote somewhat randomly, but slightly prefer higher stake/trust peers
+                    // And avoid voting for themselves directly too much
+                    let preferences = peers.map((p, idx) => {
+                        if (idx === this.id) return 0.1; // Low self-preference
+                        // Slight preference for higher stake and trust
+                        return 0.5 + p.stake * 2 + p.trust;
+                    });
+
+                    // Normalize preferences to probabilities
+                    const sumPrefs = preferences.reduce((a, b) => a + b, 0);
+                    if (sumPrefs > 0) {
+                         preferences = preferences.map(p => p / sumPrefs);
+                    } else { // Fallback if all preferences are 0
+                         preferences = new Array(numPeers).fill(1/numPeers);
+                    }
+
+                    // Distribute weight based on preferences (simplified)
+                     for(let i = 0; i < numPeers; i++) {
+                        this.weights[i] = preferences[i] + (Math.random() - 0.5) * 0.1; // Add some noise
+                        this.weights[i] = Math.max(0, this.weights[i]); // Ensure non-negative
+                        totalWeight += this.weights[i];
+                    }
+                }
+
+
+                // Normalize weights to sum to 1
+                if (totalWeight > 0) {
+                    for (let i = 0; i < numPeers; i++) {
+                        this.weights[i] /= totalWeight;
+                    }
+                } else if (numPeers > 0) {
+                    // Fallback: distribute equally if totalWeight is 0
+                     for (let i = 0; i < numPeers; i++) {
+                        this.weights[i] = 1 / numPeers;
+                    }
+                }
+            }
+
+            updateDOM() {
+                if (!this.el) return;
+                const stakePercent = (this.stake / totalStake) * 100 * numPeers; // Scale for visibility
+                this.el.querySelector('.peer-id').textContent = `P${this.id}`;
+                this.el.querySelector('.peer-stake').textContent = this.stake.toFixed(3);
+                const stakeFill = this.el.querySelector('.stake-fill');
+                stakeFill.style.width = `${Math.min(100, stakePercent)}%`; // Cap at 100% visually
+                 stakeFill.classList.add('stake-change');
+                 setTimeout(() => stakeFill.classList.remove('stake-change'), 1000); // Animation timing
+
+                if (this.isCabal) {
+                    this.el.classList.add('border-red-500', 'bg-red-100');
+                } else {
+                    this.el.classList.remove('border-red-500', 'bg-red-100');
+                }
+            }
+        }
+
+        function initSimulation() {
+            round = 0;
+            totalStake = 1.0;
+            peers = [];
+            peerVis.innerHTML = ''; // Clear previous peers
+            svgLines.innerHTML = ''; // Clear previous lines
+            logArea.innerHTML = "Simulation reset. Click 'Run One Step' or 'Auto-Run'.<br>";
+            roundCounterEl.textContent = round;
+            totalStakeEl.textContent = totalStake.toFixed(2);
+
+
+            for (let i = 0; i < numPeers; i++) {
+                const isCabal = i >= numPeers - numCabal;
+                const peer = new Peer(i, isCabal);
+                createPeerElement(peer);
+                peers.push(peer);
+            }
+            peers.forEach(p => p.updateDOM());
+             positionPeers(); // Arrange peers visually
+        }
+
+        function createPeerElement(peer) {
+            const div = document.createElement('div');
+            div.classList.add('peer-node', 'absolute'); // Use absolute for positioning
+            div.innerHTML = `
+                <span class="peer-id text-sm font-semibold text-gray-700">P${peer.id}</span>
+                <span class="peer-stake text-xs text-blue-700">0.000</span>
+                <div class="stake-bar"><div class="stake-fill"></div></div>
+            `;
+            div.dataset.peerId = peer.id;
+            peer.el = div;
+            peerVis.appendChild(div);
+
+             // Add hover effect to show outgoing votes
+            div.addEventListener('mouseenter', () => showVotesFrom(peer.id));
+            div.addEventListener('mouseleave', clearVoteLines);
+        }
+
+        function positionPeers() {
+            const radius = Math.min(peerVis.offsetWidth, peerVis.offsetHeight) * 0.4;
+            const centerX = peerVis.offsetWidth / 2;
+            const centerY = peerVis.offsetHeight / 2;
+
+            peers.forEach((peer, index) => {
+                const angle = (index / numPeers) * 2 * Math.PI - Math.PI / 2; // Start from top
+                const x = centerX + radius * Math.cos(angle) - peer.el.offsetWidth / 2;
+                const y = centerY + radius * Math.sin(angle) - peer.el.offsetHeight / 2;
+                peer.el.style.left = `${x}px`;
+                peer.el.style.top = `${y}px`;
+            });
+        }
+
+         // Function to draw voting lines
+        function drawVoteLines() {
+            svgLines.innerHTML = ''; // Clear previous lines
+
+            peers.forEach(voter => {
+                const startX = voter.el.offsetLeft + voter.el.offsetWidth / 2;
+                const startY = voter.el.offsetTop + voter.el.offsetHeight / 2;
+
+                voter.weights.forEach((weight, targetId) => {
+                    if (weight > 0.01 && voter.id !== targetId) { // Only draw significant votes, not self-votes
+                        const targetPeer = peers[targetId];
+                        const endX = targetPeer.el.offsetLeft + targetPeer.el.offsetWidth / 2;
+                        const endY = targetPeer.el.offsetTop + targetPeer.el.offsetHeight / 2;
+
+                        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                        line.setAttribute('x1', startX);
+                        line.setAttribute('y1', startY);
+                        line.setAttribute('x2', endX);
+                        line.setAttribute('y2', endY);
+                        line.classList.add('vote-line');
+                        line.dataset.voterId = voter.id;
+                        line.dataset.targetId = targetId;
+                         // Make line thickness proportional to weight * voter stake (optional, can be noisy)
+                         // line.style.strokeWidth = 1 + Math.min(3, weight * voter.stake * numPeers * 5);
+                        svgLines.appendChild(line);
+                    }
+                });
+            });
+        }
+
+        function showVotesFrom(voterId) {
+            svgLines.querySelectorAll('.vote-line').forEach(line => {
+                if (line.dataset.voterId == voterId) {
+                    line.classList.add('active');
+                } else {
+                    line.classList.remove('active');
+                    line.style.opacity = '0.1'; // Dim other lines
+                }
+            });
+             peers[voterId].el.classList.add('selected');
+        }
+
+        function clearVoteLines() {
+            svgLines.querySelectorAll('.vote-line').forEach(line => {
+                 line.classList.remove('active');
+                 line.style.opacity = ''; // Restore default opacity
+            });
+             peers.forEach(p => p.el.classList.remove('selected'));
+        }
+
+
+        function runSimulationStep() {
+            round++;
+            logArea.innerHTML = `--- Round ${round} ---<br>`;
+
+            // 1. Peers determine their weights (votes)
+            peers.forEach(p => p.calculateWeights());
+            logArea.innerHTML += `Peers calculated their weights.<br>`;
+            drawVoteLines(); // Update visual lines
+
+            // 2. Calculate Rank (R) for each peer
+            // Rank is the stake-weighted sum of incoming weights
+            peers.forEach(targetPeer => {
+                targetPeer.rank = 0;
+                peers.forEach(voterPeer => {
+                    targetPeer.rank += voterPeer.stake * voterPeer.weights[targetPeer.id];
+                });
+            });
+            // Normalize ranks (optional, helps keep values reasonable)
+            const totalRank = peers.reduce((sum, p) => sum + p.rank, 0);
+             if (totalRank > 0) {
+                 peers.forEach(p => p.rank /= totalRank);
+             }
+            logArea.innerHTML += `Calculated Ranks (R).<br>`;
+
+            // 3. Calculate Trust (T) based on Consensus
+            // Simplified: Trust = sigmoid(temp * (stake_voting_for_me / totalStake - consensusThreshold))
+            peers.forEach(targetPeer => {
+                 let stakeVotingForMe = 0;
+                 peers.forEach(voterPeer => {
+                    // Consider a vote if weight is significant
+                    if (voterPeer.weights[targetPeer.id] > 1 / (numPeers * 2)) {
+                        stakeVotingForMe += voterPeer.stake;
+                    }
+                 });
+                 const consensusScore = (stakeVotingForMe / totalStake) - consensusThreshold;
+                 targetPeer.trust = 1 / (1 + Math.exp(-temp * consensusScore)); // Sigmoid function
+            });
+             logArea.innerHTML += `Calculated Trust (T) based on consensus.<br>`;
+
+            // 4. Calculate Incentive (I) = Rank * Trust
+            peers.forEach(p => {
+                p.incentive = p.rank * p.trust;
+            });
+            logArea.innerHTML += `Calculated Incentive (I = R * T).<br>`;
+
+            // 5. Distribute Inflation (New Stake)
+            const totalIncentive = peers.reduce((sum, p) => sum + p.incentive, 0);
+            const newStakeTotal = totalStake * inflationRate;
+
+            if (totalIncentive > 0) {
+                peers.forEach(p => {
+                    const stakeToAdd = newStakeTotal * (p.incentive / totalIncentive);
+                    p.stake += stakeToAdd;
+                    logArea.innerHTML += `P${p.id} ${p.isCabal ? '(Cabal)' : ''}: R=${p.rank.toFixed(3)}, T=${p.trust.toFixed(3)}, I=${p.incentive.toFixed(4)}, +Stake=${stakeToAdd.toFixed(4)}<br>`;
+                });
+            } else {
+                 // Distribute equally if no incentive (e.g., at start)
+                 peers.forEach(p => {
+                    const stakeToAdd = newStakeTotal / numPeers;
+                    p.stake += stakeToAdd;
+                     logArea.innerHTML += `P${p.id} ${p.isCabal ? '(Cabal)' : ''}: No incentive, adding ${stakeToAdd.toFixed(4)} stake.<br>`;
+                 });
+            }
+
+            // 6. Normalize total stake back to 1 + inflation (or just 1 if preferred)
+            // Let's allow total stake to grow for this simulation to see inflation effect
+            totalStake += newStakeTotal;
+            // OR normalize back to 1:
+            // const currentTotalStake = peers.reduce((sum, p) => sum + p.stake, 0);
+            // peers.forEach(p => p.stake /= currentTotalStake);
+            // totalStake = 1.0;
+
+
+            // 7. Update UI
+            roundCounterEl.textContent = round;
+            totalStakeEl.textContent = totalStake.toFixed(2);
+            peers.forEach(p => p.updateDOM());
+            logArea.scrollTop = logArea.scrollHeight; // Scroll to bottom
+        }
+
+        function startAutoRun() {
+            if (autoRunInterval) return; // Already running
+            stopAutoBtn.classList.remove('hidden');
+            runAutoBtn.classList.add('hidden');
+            runStepBtn.disabled = true;
+            resetBtn.disabled = true;
+             logArea.innerHTML += `--- Auto-running (5s interval) ---<br>`;
+            runSimulationStep(); // Run first step immediately
+            autoRunInterval = setInterval(runSimulationStep, 5000);
+        }
+
+        function stopAutoRun() {
+            if (!autoRunInterval) return;
+            clearInterval(autoRunInterval);
+            autoRunInterval = null;
+            stopAutoBtn.classList.add('hidden');
+            runAutoBtn.classList.remove('hidden');
+            runStepBtn.disabled = false;
+            resetBtn.disabled = false;
+             logArea.innerHTML += `--- Auto-run stopped ---<br>`;
+             logArea.scrollTop = logArea.scrollHeight;
+        }
+
+        // Event Listeners
+        runStepBtn.addEventListener('click', runSimulationStep);
+        runAutoBtn.addEventListener('click', startAutoRun);
+        stopAutoBtn.addEventListener('click', stopAutoRun);
+        resetBtn.addEventListener('click', () => {
+            stopAutoRun(); // Ensure auto-run is stopped before reset
+            initSimulation();
+        });
+
+        // Initial setup
+        window.addEventListener('load', () => {
+            initSimulation();
+             // Adjust positions if window resized (simple version)
+             new ResizeObserver(positionPeers).observe(peerVis);
+        });
+         window.addEventListener('resize', positionPeers); // Also handle resize
+
+
+    </script>
+</body>
+</html>
